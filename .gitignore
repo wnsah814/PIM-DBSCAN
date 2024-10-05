@@ -1,0 +1,7 @@
+.vscode/
+test/
+*.o
+data/
+plots/
+results/
+bin/
