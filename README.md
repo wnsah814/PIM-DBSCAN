@@ -12,13 +12,14 @@ project_root/
 │   ├── dbscan_pim_host.c
 │   └── dbscan_pim_dpu.c
 ├── bin/                 # Compiled binaries
-├── data/                # Input data files
+├── data/                # Input data files and corresponding label files
 ├── results/             # Experiment results and output files
 ├── plots/               # Generated plot images
 ├── scripts/             # Scripts for running experiments, plotting results, and generating datasets
 │   ├── run_experiments.sh
 │   ├── plot_results.py
-│   └── generate_dataset.py
+│   ├── generate_dataset.py
+│   └── calculate_ari.py
 ├── Makefile             # Makefile for compiling the project
 ├── requirements.txt     # Python dependencies
 └── README.md            # This file
@@ -36,8 +37,8 @@ project_root/
 
 1. Clone the repository:
    ```
-   git clone [repository-url]
-   cd [repository-name]
+   git clone https://github.com/wnsah814/PIM-DBSCAN.git
+   cd PIM-DBSCAN
    ```
 
 2. Install Python dependencies:
@@ -53,7 +54,7 @@ project_root/
    ```
    python3 scripts/generate_dataset.py
    ```
-   Follow the prompts to create your dataset. The generated data will be saved in the `data/` directory.
+   Follow the prompts to create your dataset. The generated data and corresponding labels will be saved in the `data/` directory.
 
 2. Compile the project:
    - Compile all versions:
@@ -97,6 +98,13 @@ project_root/
 
 4. View results in the `results/` directory and plots in the `plots/` directory.
 
+## Key Changes in This Version
+
+1. C implementations (CPU, OpenMP, PIM) no longer process label files. They only handle input data and output predicted labels.
+2. A new Python script `calculate_ari.py` has been added to calculate the Adjusted Rand Index (ARI) using scikit-learn.
+3. The `run_experiments.sh` script now coordinates the execution of C programs and the ARI calculation script.
+4. Results now include execution time from C programs and ARI calculated by the Python script.
+
 ## Customization
 
 - Modify `scripts/generate_dataset.py` to change dataset generation parameters.
@@ -107,14 +115,14 @@ project_root/
 
 - The PIM version requires sudo privileges to run.
 - Ensure all necessary libraries and paths are correctly set up before running the PIM version.
-- Make sure to generate or place your dataset in the `data/` directory before running experiments.
+- Make sure to generate or place your dataset and corresponding labels in the `data/` directory before running experiments.
 - The Makefile will automatically create necessary directories if they don't exist.
 
 ## Troubleshooting
 
 If you encounter any issues:
 1. Ensure all required dependencies are installed.
-2. Check that the data files are in the correct format and location.
+2. Check that the data files and corresponding label files are in the correct format and location.
 3. Verify that you have the necessary permissions to run the PIM version.
 4. If you encounter Python-related errors, ensure you've installed all required libraries using `pip install -r requirements.txt`.
 
