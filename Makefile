@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -O3 -Wall -Wextra -std=c99
+CFLAGS = -Wall -Wextra -std=c99
 OMPFLAGS = -fopenmp
 LDFLAGS = -lm
 
@@ -18,11 +18,11 @@ PIM_DPU_TARGET = $(BIN_DIR)/dbscan_pim_dpu
 
 # DPU 컴파일러 및 플래그
 DPU_CC = dpu-upmem-dpurte-clang
-DPU_CFLAGS = -O2 -I/home/wnsah814/upmem-sdk/include/dpu
+DPU_CFLAGS = -DNR_TASKLETS=11 -I/home/wnsah814/upmem-sdk/include/dpu
 
 # 호스트 PIM 컴파일 플래그
-PIM_HOST_CFLAGS = $(shell dpu-pkg-config --cflags)
-PIM_HOST_LIBS = $(shell dpu-pkg-config --libs dpu)
+# PIM_HOST_CFLAGS = $(shell dpu-pkg-config --cflags)
+# PIM_HOST_LIBS = $(shell dpu-pkg-config --libs dpu)
 
 # 기본 타겟 설정
 TARGETS = $(CPU_TARGET)
@@ -52,7 +52,7 @@ $(CPU_OMP_TARGET): $(CPU_OMP_SRC)
 	$(CC) $(CFLAGS) $(OMPFLAGS) $< -o $@ $(LDFLAGS)
 
 $(PIM_HOST_TARGET): $(PIM_HOST_SRC)
-	$(CC) $(CFLAGS) $(PIM_HOST_CFLAGS) $< -o $@ $(LDFLAGS) $(PIM_HOST_LIBS)
+	$(CC) $(CFLAGS) $< -o $@ `dpu-pkg-config --cflags --libs dpu`
 
 $(PIM_DPU_TARGET): $(PIM_DPU_SRC)
 	$(DPU_CC) $(DPU_CFLAGS) $< -o $@
