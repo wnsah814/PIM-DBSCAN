@@ -1,23 +1,23 @@
 #!/bin/bash
 
-# 디렉토리 설정
+# Directory setup
 BIN_DIR="./bin"
 DATA_DIR="./data"
 RESULTS_DIR="./results"
 
-# 결과 디렉토리 생성
+# Create results directory
 mkdir -p $RESULTS_DIR
 
-# DBSCAN 파라미터
+# DBSCAN parameters
 EPS=1.6
 MIN_PTS=3
 
-# 실행할 버전 설정
+# Set versions to run
 RUN_CPU=0
 RUN_OPENMP=0
 RUN_PIM=0
 
-# 명령줄 인자 파싱
+# Parse command line arguments
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         -c|--cpu) RUN_CPU=1 ;;
@@ -28,18 +28,18 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-# 아무 옵션도 선택되지 않았다면 모든 버전 실행
+# If no options selected, run all versions
 if [[ $RUN_CPU -eq 0 && $RUN_OPENMP -eq 0 && $RUN_PIM -eq 0 ]]; then
     RUN_CPU=1
     RUN_OPENMP=1
     RUN_PIM=1
 fi
 
-# data/ 디렉토리의 모든 CSV 파일에 대해 실험 실행
+# Run experiments for all CSV files in data/ directory
 for data_file in $DATA_DIR/*.csv; do
-    # 레이블 파일이 아닌 경우에만 처리
+    # Process only if not a labels file
     if [[ $data_file != *"_labels.csv" ]]; then
-        # 레이블 파일이 존재하는지 확인
+        # Check if labels file exists
         labels_file="${data_file%.*}_labels.csv"
         if [[ ! -f "$labels_file" ]]; then
             echo "Labels file not found for $data_file. Skipping."
@@ -50,21 +50,30 @@ for data_file in $DATA_DIR/*.csv; do
         echo "Running experiments for $dataset dataset"
         
         if [[ $RUN_CPU -eq 1 ]]; then
-            # CPU 버전
+            # CPU version
             echo "Running CPU version..."
-            $BIN_DIR/dbscan_cpu "$data_file" "$labels_file" $EPS $MIN_PTS "$RESULTS_DIR/cpu_${dataset}"
+            $BIN_DIR/dbscan_cpu "$data_file" $EPS $MIN_PTS "$RESULTS_DIR/cpu_${dataset}"
+            # Calculate ARI
+            ari=$(python3 scripts/calculate_ari.py "$labels_file" "${RESULTS_DIR}/cpu_${dataset}_labels.txt")
+            echo "CPU ARI: $ari" >> "${RESULTS_DIR}/cpu_${dataset}_result.txt"
         fi
         
         if [[ $RUN_OPENMP -eq 1 ]]; then
-            # OpenMP 버전
+            # OpenMP version
             echo "Running OpenMP version..."
-            $BIN_DIR/dbscan_cpu_openmp "$data_file" "$labels_file" $EPS $MIN_PTS "$RESULTS_DIR/openmp_${dataset}"
+            $BIN_DIR/dbscan_cpu_openmp "$data_file" $EPS $MIN_PTS "$RESULTS_DIR/openmp_${dataset}"
+            # Calculate ARI
+            ari=$(python3 scripts/calculate_ari.py "$labels_file" "${RESULTS_DIR}/openmp_${dataset}_labels.txt")
+            echo "OpenMP ARI: $ari" >> "${RESULTS_DIR}/openmp_${dataset}_result.txt"
         fi
         
         if [[ $RUN_PIM -eq 1 ]]; then
-            # PIM 버전
+            # PIM version
             echo "Running PIM version..."
-            sudo LD_LIBRARY_PATH=$LD_LIBRARY_PATH $BIN_DIR/dbscan_pim_host "$data_file" "$labels_file" $EPS $MIN_PTS "$RESULTS_DIR/pim_${dataset}"
+            sudo LD_LIBRARY_PATH=$LD_LIBRARY_PATH $BIN_DIR/dbscan_pim_host "$data_file" $EPS $MIN_PTS "$RESULTS_DIR/pim_${dataset}"
+            # Calculate ARI
+            ari=$(python3 scripts/calculate_ari.py "$labels_file" "${RESULTS_DIR}/pim_${dataset}_labels.txt")
+            echo "PIM ARI: $ari" >> "${RESULTS_DIR}/pim_${dataset}_result.txt"
         fi
         
         echo "Finished experiments for $dataset dataset"

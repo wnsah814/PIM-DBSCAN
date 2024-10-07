@@ -128,39 +128,16 @@ void dbscan(Point *points, int n_points, double eps, int min_pts) {
   free_int_vector(new_neighbors);
 }
 
-double rand_index(double *labels_true, int *labels_pred, int n_points) {
-  long long tp = 0, tn = 0, fp = 0, fn = 0;
-  for (int i = 0; i < n_points; i++) {
-    double label_true_i = labels_true[i];
-    int label_pred_i = labels_pred[i];
-    for (int j = i + 1; j < n_points; j++) {
-      if (fabs(label_true_i - labels_true[j]) < 1e-6 && label_pred_i == labels_pred[j])
-        tp++;
-      else if (fabs(label_true_i - labels_true[j]) >= 1e-6 && label_pred_i != labels_pred[j])
-        tn++;
-      else if (fabs(label_true_i - labels_true[j]) >= 1e-6 && label_pred_i == labels_pred[j])
-        fp++;
-      else if (fabs(label_true_i - labels_true[j]) < 1e-6 && label_pred_i != labels_pred[j])
-        fn++;
-    }
-  }
-  double ri = (double)(tp + tn) / (tp + tn + fp + fn);
-  double expected_ri = ((double)(tp + fp) * (tp + fn) + (double)(tn + fp) * (tn + fn)) /
-                       ((double)(tp + tn + fp + fn) * (tp + tn + fp + fn));
-  return (ri - expected_ri) / (1 - expected_ri);
-}
-
 int main(int argc, char *argv[]) {
-  if (argc != 6) {
-    printf("Usage: %s <data_file> <labels_file> <eps> <min_pts> <output_prefix>\n", argv[0]);
+  if (argc != 5) {
+    printf("Usage: %s <data_file> <eps> <min_pts> <output_prefix>\n", argv[0]);
     return 1;
   }
 
   char *data_file = argv[1];
-  char *labels_file = argv[2];
-  double eps = atof(argv[3]);
-  int min_pts = atoi(argv[4]);
-  char *output_prefix = argv[5];
+  double eps = atof(argv[2]);
+  int min_pts = atoi(argv[3]);
+  char *output_prefix = argv[4];
 
   int n_points = 0;
   int max_points = 1000000;
@@ -183,41 +160,12 @@ int main(int argc, char *argv[]) {
   }
   fclose(file);
 
-  // Load true labels (as float)
-  double *labels_true = (double *)malloc(n_points * sizeof(double));
-  file = fopen(labels_file, "r");
-  if (file == NULL) {
-    printf("Error opening labels file\n");
-    free(points);
-    return 1;
-  }
-
-  for (int i = 0; i < n_points; i++) {
-    if (fscanf(file, "%lf", &labels_true[i]) != 1) {
-      printf("Error reading labels\n");
-      fclose(file);
-      free(points);
-      free(labels_true);
-      return 1;
-    }
-  }
-  fclose(file);
-
   struct timeval start_time, end_time;
   gettimeofday(&start_time, NULL);
   dbscan(points, n_points, eps, min_pts);
   gettimeofday(&end_time, NULL);
 
   double time_taken = (end_time.tv_sec - start_time.tv_sec) + (end_time.tv_usec - start_time.tv_usec) / 1e6;
-
-  // Prepare predicted labels
-  int *labels_pred = (int *)malloc(n_points * sizeof(int));
-  for (int i = 0; i < n_points; i++) {
-    labels_pred[i] = points[i].cluster;
-  }
-
-  // Calculate accuracy (ARI)
-  double ari = rand_index(labels_true, labels_pred, n_points);
 
   // Create result file name
   char result_file[256];
@@ -232,41 +180,30 @@ int main(int argc, char *argv[]) {
 
   // Write results to file
   fprintf(result, "DBSCAN completed in %f seconds\n", time_taken);
-  fprintf(result, "Adjusted Rand Index: %f\n", ari);
-
-  // Print first 10 point results
-  for (int i = 0; i < 10 && i < n_points; i++) {
-    fprintf(result, "Point %d: true cluster %f, predicted cluster %d\n", i, labels_true[i], labels_pred[i]);
-  }
 
   fclose(result);
 
-  // Create plot data file name
-  char plot_file[256];
-  snprintf(plot_file, sizeof(plot_file), "%s_plot_data.csv", output_prefix);
+  // Create labels file name
+  char labels_output_file[256];
+  snprintf(labels_output_file, sizeof(labels_output_file), "%s_labels.txt", output_prefix);
 
-  // Save plot data
-  FILE *plot = fopen(plot_file, "w");
-  if (plot == NULL) {
-    printf("Error opening plot data file\n");
+  // Save predicted labels
+  FILE *labels_output = fopen(labels_output_file, "w");
+  if (labels_output == NULL) {
+    printf("Error opening labels output file\n");
     free(points);
-    free(labels_true);
-    free(labels_pred);
     return 1;
   }
 
-  fprintf(plot, "x,y,true_label,predicted_label\n");
   for (int i = 0; i < n_points; i++) {
-    fprintf(plot, "%f,%f,%f,%d\n", points[i].x[0], points[i].x[1], labels_true[i], labels_pred[i]);
+    fprintf(labels_output, "%d\n", points[i].cluster);
   }
-  fclose(plot);
+  fclose(labels_output);
 
   printf("Results saved to %s\n", result_file);
-  printf("Plot data saved to %s\n", plot_file);
+  printf("Predicted labels saved to %s\n", labels_output_file);
 
   free(points);
-  free(labels_true);
-  free(labels_pred);
 
   return 0;
 }
