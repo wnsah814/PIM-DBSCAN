@@ -9,10 +9,13 @@ def get_user_input(prompt, default_value, value_type=int):
         return default_value
     return value_type(user_input)
 
+def round_to_2_decimals(X):
+    return np.round(X, decimals=2)
+
 def generate_custom_dataset(n_samples, n_features):
     X = np.random.randn(n_samples, n_features)
     y = np.random.randint(0, 3, n_samples)
-    return X, y
+    return round_to_2_decimals(X), y
 
 def create_folder_if_not_exists(folder_path):
     if not os.path.exists(folder_path):
@@ -46,17 +49,20 @@ def main():
         cluster_std = get_user_input("Enter cluster standard deviation", 1.0, float)
         X, y = make_blobs(n_samples=n_samples, centers=n_centers, n_features=n_features, 
                           cluster_std=cluster_std, random_state=random_state)
+        X = round_to_2_decimals(X)
         dataset_name = f"blobs_{n_samples}_{n_centers}clusters_{n_features}d"
     
     elif dataset_type == 2:  # Moons
         noise = get_user_input("Enter noise level", 0.1, float)
         X, y = make_moons(n_samples=n_samples, noise=noise, random_state=random_state)
+        X = round_to_2_decimals(X)
         dataset_name = f"moons_{n_samples}_{noise}noise"
     
     elif dataset_type == 3:  # Circles
         noise = get_user_input("Enter noise level", 0.1, float)
         factor = get_user_input("Enter factor (separation between circles)", 0.8, float)
         X, y = make_circles(n_samples=n_samples, noise=noise, factor=factor, random_state=random_state)
+        X = round_to_2_decimals(X)
         dataset_name = f"circles_{n_samples}_{noise}noise_{factor}factor"
     
     elif dataset_type == 4:  # Custom
@@ -86,12 +92,12 @@ def main():
 
     # Save the dataset to a CSV file
     data_path = os.path.join(folder_path, f'{dataset_name}.csv')
-    np.savetxt(data_path, X, delimiter=',')
+    np.savetxt(data_path, X, delimiter=',', fmt='%.2f')
     print(f"Dataset saved as {data_path}")
 
     # Save the labels separately
     labels_path = os.path.join(folder_path, f'{dataset_name}_labels.csv')
-    np.savetxt(labels_path, y, delimiter=',')
+    np.savetxt(labels_path, y, delimiter=',', fmt='%d')
     print(f"Labels saved as {labels_path}")
 
 if __name__ == "__main__":
