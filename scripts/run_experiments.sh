@@ -72,7 +72,7 @@ for data_file in $DATA_DIR/*.csv; do
             echo "Running PIM version..."
             sudo LD_LIBRARY_PATH=$LD_LIBRARY_PATH $BIN_DIR/dbscan_pim_host "$data_file" $EPS $MIN_PTS "$RESULTS_DIR/pim_${dataset}"
             # Calculate ARI
-            ari=$(python3 scripts/calculate_ari.py "$labels_file" "${RESULTS_DIR}/pim_${dataset}_labels.txt")
+            ari=sudo $(python3 scripts/calculate_ari.py "$labels_file" "${RESULTS_DIR}/pim_${dataset}_labels.txt")
             echo "PIM ARI: $ari" >> "${RESULTS_DIR}/pim_${dataset}_result.txt"
         fi
         
@@ -85,6 +85,6 @@ echo "All experiments completed. Results are saved in $RESULTS_DIR"
 
 # Plot results
 echo "Plotting results..."
-python3 scripts/plot_results.py
+sudo python3 scripts/plot_results.py
 
 echo "Experiment and plotting completed."
