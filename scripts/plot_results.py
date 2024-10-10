@@ -52,7 +52,7 @@ def main():
     os.makedirs(plots_dir, exist_ok=True)
 
     # Plot results for each dataset and implementation
-    for implementation in ['cpu', 'openmp', 'pim']:
+    for implementation in ['cpu', 'pim']:
         for data_file in os.listdir(data_dir):
             if data_file.endswith('.csv') and not data_file.endswith('_labels.csv'):
                 dataset = data_file[:-4]  # Remove .csv extension
