@@ -9,8 +9,8 @@ RESULTS_DIR="./results"
 mkdir -p $RESULTS_DIR
 
 # DBSCAN parameters
-EPS=1.6
-MIN_PTS=3
+EPS=100
+MIN_PTS=10
 
 # Set versions to run
 RUN_CPU=0
@@ -71,8 +71,13 @@ for data_file in $DATA_DIR/*.csv; do
             # PIM version
             echo "Running PIM version..."
             sudo LD_LIBRARY_PATH=$LD_LIBRARY_PATH $BIN_DIR/dbscan_pim_host "$data_file" $EPS $MIN_PTS "$RESULTS_DIR/pim_${dataset}"
+            
+            # Change permissions of the output files
+            sudo chown $USER:$USER "${RESULTS_DIR}/pim_${dataset}_labels.txt"
+            sudo chown $USER:$USER "${RESULTS_DIR}/pim_${dataset}_result.txt"
+            
             # Calculate ARI
-            ari=sudo $(python3 scripts/calculate_ari.py "$labels_file" "${RESULTS_DIR}/pim_${dataset}_labels.txt")
+            ari=$(python3 scripts/calculate_ari.py "$labels_file" "${RESULTS_DIR}/pim_${dataset}_labels.txt")
             echo "PIM ARI: $ari" >> "${RESULTS_DIR}/pim_${dataset}_result.txt"
         fi
         
@@ -85,6 +90,6 @@ echo "All experiments completed. Results are saved in $RESULTS_DIR"
 
 # Plot results
 echo "Plotting results..."
-sudo python3 scripts/plot_results.py
+python3 scripts/plot_results.py
 
 echo "Experiment and plotting completed."
