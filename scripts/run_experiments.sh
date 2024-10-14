@@ -9,8 +9,8 @@ RESULTS_DIR="./results"
 mkdir -p $RESULTS_DIR
 
 # DBSCAN parameters
-EPS=100
-MIN_PTS=10
+EPS=50
+MIN_PTS=20
 
 # Set versions to run
 RUN_CPU=0
