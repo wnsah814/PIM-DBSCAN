@@ -2,6 +2,7 @@ import os
 from sklearn.datasets import make_moons, make_blobs, make_circles
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.preprocessing import MinMaxScaler
 
 def get_user_input(prompt, default_value, value_type=int):
     user_input = input(f"{prompt} (default: {default_value}): ")
@@ -9,13 +10,15 @@ def get_user_input(prompt, default_value, value_type=int):
         return default_value
     return value_type(user_input)
 
-def round_to_2_decimals(X):
-    return np.round(X, decimals=2)
+def scale_to_integers(X, min_val=0, max_val=1000):
+    scaler = MinMaxScaler(feature_range=(min_val, max_val))
+    X_scaled = scaler.fit_transform(X)
+    return X_scaled.astype(int)
 
 def generate_custom_dataset(n_samples, n_features):
     X = np.random.randn(n_samples, n_features)
     y = np.random.randint(0, 3, n_samples)
-    return round_to_2_decimals(X), y
+    return X, y
 
 def create_folder_if_not_exists(folder_path):
     if not os.path.exists(folder_path):
@@ -23,7 +26,6 @@ def create_folder_if_not_exists(folder_path):
         print(f"Created folder: {folder_path}")
 
 def main():
-    # Get folder path from user
     default_folder = "./data"
     folder_path = input(f"Enter folder path to save datasets (default: {default_folder}): ").strip()
     if folder_path == "":
@@ -39,7 +41,6 @@ def main():
     
     dataset_type = get_user_input("Enter your choice", 1)
 
-    # Get common user inputs
     n_samples = get_user_input("Enter number of samples", 65536)
     random_state = get_user_input("Enter random state", 42)
 
@@ -49,20 +50,17 @@ def main():
         cluster_std = get_user_input("Enter cluster standard deviation", 1.0, float)
         X, y = make_blobs(n_samples=n_samples, centers=n_centers, n_features=n_features, 
                           cluster_std=cluster_std, random_state=random_state)
-        X = round_to_2_decimals(X)
         dataset_name = f"blobs_{n_samples}_{n_centers}clusters_{n_features}d"
     
     elif dataset_type == 2:  # Moons
         noise = get_user_input("Enter noise level", 0.1, float)
         X, y = make_moons(n_samples=n_samples, noise=noise, random_state=random_state)
-        X = round_to_2_decimals(X)
         dataset_name = f"moons_{n_samples}_{noise}noise"
     
     elif dataset_type == 3:  # Circles
         noise = get_user_input("Enter noise level", 0.1, float)
         factor = get_user_input("Enter factor (separation between circles)", 0.8, float)
         X, y = make_circles(n_samples=n_samples, noise=noise, factor=factor, random_state=random_state)
-        X = round_to_2_decimals(X)
         dataset_name = f"circles_{n_samples}_{noise}noise_{factor}factor"
     
     elif dataset_type == 4:  # Custom
@@ -74,8 +72,12 @@ def main():
         print("Invalid choice. Exiting.")
         return
 
+    # Scale to integers
+    X = scale_to_integers(X)
+
     # Plot a subset of the data
-    max_plot_samples = min(1000, n_samples)
+    # max_plot_samples = min(1000, n_samples)
+    max_plot_samples = n_samples
     plt.figure(figsize=(10, 8))
     if X.shape[1] == 2:
         plt.scatter(X[:max_plot_samples, 0], X[:max_plot_samples, 1], c=y[:max_plot_samples])
@@ -92,7 +94,7 @@ def main():
 
     # Save the dataset to a CSV file
     data_path = os.path.join(folder_path, f'{dataset_name}.csv')
-    np.savetxt(data_path, X, delimiter=',', fmt='%.2f')
+    np.savetxt(data_path, X, delimiter=',', fmt='%d')
     print(f"Dataset saved as {data_path}")
 
     # Save the labels separately

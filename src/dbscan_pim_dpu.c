@@ -3,6 +3,7 @@
 #include <defs.h>
 #include <mram.h>
 #include <mutex.h>
+#include <perfcounter.h>
 #include <stdio.h>
 
 #define DIMENSIONS 2
@@ -13,7 +14,7 @@
 #endif
 
 typedef struct {
-  double x[DIMENSIONS];
+  int32_t x[DIMENSIONS];
   int32_t cluster;
   int32_t index;
 } Point;
@@ -24,7 +25,7 @@ MUTEX_INIT(neighbor_mutex);
 MUTEX_INIT(buffer_mutex);
 
 __mram_noinit uint64_t mram_n_points;
-__mram_noinit double mram_eps_squared;
+__mram_noinit int64_t mram_eps_squared;
 __mram_noinit Point mram_points[MAX_NEIGHBORS];
 __mram_noinit Point mram_query_point;
 
@@ -34,7 +35,7 @@ __host uint32_t neighbor_count; // host는 WRAM에 접근해 이 값을 가져�
 
 // tasklet_0 에 의해 변경될 값들
 __dma_aligned uint32_t n_points;
-__dma_aligned double eps_squared;
+__dma_aligned int32_t eps_squared;
 __dma_aligned Point query_point;
 
 __dma_aligned uint32_t points_per_tasklet;
@@ -43,11 +44,11 @@ __dma_aligned Point output_buffer[2][CACHE_SIZE];
 __dma_aligned uint8_t active_buffer; // 0 or 1
 __dma_aligned uint32_t buffer_index;
 
-double squared_distance(const double *a, const double *b) {
-  double sum = 0.0;
+int32_t squared_distance(const int32_t *a, const int32_t *b) {
+  int32_t sum = 0;
   for (int i = 0; i < DIMENSIONS; i++) {
-    double diff = a[i] - b[i];
-    sum += (float)diff * (float)diff;
+    int32_t diff = a[i] - b[i];
+    sum += diff * diff;
   }
   return sum;
 }

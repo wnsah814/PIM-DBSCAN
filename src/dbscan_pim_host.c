@@ -25,7 +25,7 @@
 // } Point;
 
 typedef struct {
-  double x[DIMENSIONS];
+  int32_t x[DIMENSIONS];
   int32_t cluster;
   int32_t index;
 } Point;
@@ -90,7 +90,7 @@ int load_data(const char *filename) {
   int count = 0;
   points = malloc(capacity * sizeof(Point));
 
-  while (fscanf(file, "%lf,%lf", &points[count].x[0], &points[count].x[1]) == 2) {
+  while (fscanf(file, "%d,%d", &points[count].x[0], &points[count].x[1]) == 2) {
     points[count].cluster = UNCLASSIFIED;
     points[count].index = count;
     count++;
@@ -108,7 +108,7 @@ int load_data(const char *filename) {
 void get_neighbors_from_dpus(struct dpu_set_t set, const Point *query_point, int n_points, IntVector *neighbors) {
   struct dpu_set_t dpu;
   uint32_t each_dpu;
-  // printf("sending point (%lf, %lf)\n", (*query_point).x[0], (*query_point).x[1]);
+  // printf("sending point (%d, %d)\n", (*query_point).x[0], (*query_point).x[1]);
   DPU_ASSERT(dpu_broadcast_to(set, "mram_query_point", 0, query_point, sizeof(Point), DPU_XFER_DEFAULT));
 
   DPU_ASSERT(dpu_launch(set, DPU_SYNCHRONOUS));
@@ -242,7 +242,7 @@ void test_first_point(struct dpu_set_t set, uint32_t nr_dpus) {
   uint32_t each_dpu;
   uint32_t nums[nr_dpus];
 
-  printf("sending point (%lf, %lf)\n", points[0].x[0], points[0].x[1]);
+  printf("sending point (%d, %d)\n", points[0].x[0], points[0].x[1]);
   DPU_ASSERT(dpu_broadcast_to(set, "mram_query_point", 0, &points[0], sizeof(Point), DPU_XFER_DEFAULT));
 
   printf("starting the program...\n");
@@ -266,7 +266,7 @@ void test_first_point(struct dpu_set_t set, uint32_t nr_dpus) {
   }
 
   for (int i = 0; i < 4; ++i) {
-    printf("[%2d] %lf, %lf\n", i, neighbors[i].x[0], neighbors[i].x[1]);
+    printf("[%2d] %d, %d\n", i, neighbors[i].x[0], neighbors[i].x[1]);
   }
   printf("\nDONE\n");
 }
@@ -276,7 +276,7 @@ void test_dump(struct dpu_set_t set, uint32_t nr_dpus, uint32_t points_per_dpu) 
   uint32_t each_dpu;
   uint32_t nums[nr_dpus];
 
-  printf("sending point (%lf, %lf)\n", points[0].x[0], points[0].x[1]);
+  printf("sending point (%d, %d)\n", points[0].x[0], points[0].x[1]);
   DPU_ASSERT(dpu_broadcast_to(set, "mram_query_point", 0, &points[0], sizeof(Point), DPU_XFER_DEFAULT));
 
   printf("starting the program...\n");
@@ -296,7 +296,7 @@ void print_test(struct dpu_set_t set, uint32_t nr_dpus) {
   uint32_t ids[nr_dpus];
   printf("\n##LOG##\n");
 
-  printf("sending point (%lf, %lf)\n", points[0].x[0], points[0].x[1]);
+  printf("sending point (%d, %d)\n", points[0].x[0], points[0].x[1]);
   DPU_ASSERT(dpu_broadcast_to(set, "mram_query_point", 0, &points[0], sizeof(Point), DPU_XFER_DEFAULT));
 
   printf("starting the program...\n");
@@ -315,7 +315,7 @@ int main(int argc, char *argv[]) {
   }
 
   char *data_file = argv[1];
-  double eps = atof(argv[2]);
+  int32_t eps = atoi(argv[2]);
   min_pts = atoi(argv[3]);
   char *output_prefix = argv[4];
 
@@ -325,7 +325,7 @@ int main(int argc, char *argv[]) {
   }
 
   // for (int i = 0; i < 10; ++i) {
-  //   printf("%lf, %lf\n", points[i].x[0], points[i].x[1]);
+  //   printf("%d, %d\n", points[i].x[0], points[i].x[1]);
   // }
 
   struct dpu_set_t set, dpu;
@@ -344,7 +344,7 @@ int main(int argc, char *argv[]) {
 
   DPU_ASSERT(dpu_broadcast_to(set, "mram_n_points", 0, &points_per_dpu, 8, DPU_XFER_DEFAULT));
   eps = eps * eps;
-  DPU_ASSERT(dpu_broadcast_to(set, "mram_eps_squared", 0, &eps, sizeof(eps), DPU_XFER_DEFAULT));
+  DPU_ASSERT(dpu_broadcast_to(set, "mram_eps_squared", 0, &eps, 8, DPU_XFER_DEFAULT));
   uint32_t each_dpu;
   DPU_FOREACH(set, dpu, each_dpu) {
 
