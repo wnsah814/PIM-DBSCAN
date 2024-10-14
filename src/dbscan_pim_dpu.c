@@ -24,19 +24,19 @@ BARRIER_INIT(final_sync_barrier, NR_TASKLETS);
 MUTEX_INIT(neighbor_mutex);
 MUTEX_INIT(buffer_mutex);
 
-__mram_noinit uint64_t mram_n_points;
-__mram_noinit int64_t mram_eps_squared;
+// __mram_noinit uint64_t mram_n_points;
+// __mram_noinit int64_t mram_eps_squared;
 __mram_noinit Point mram_points[MAX_NEIGHBORS];
-__mram_noinit Point mram_query_point;
+// __mram_noinit Point mram_query_point;
 
 // host에게 전달할 값들
 __mram_noinit Point mram_neighbors[MAX_NEIGHBORS];
 __host uint32_t neighbor_count; // host는 WRAM에 접근해 이 값을 가져온다?
 
 // tasklet_0 에 의해 변경될 값들
-__dma_aligned uint32_t n_points;
-__dma_aligned int32_t eps_squared;
-__dma_aligned Point query_point;
+__host uint32_t n_points;
+__host int32_t eps_squared;
+__host Point query_point;
 
 __dma_aligned uint32_t points_per_tasklet;
 
@@ -64,9 +64,9 @@ int main() {
     neighbor_count = 0; // 필요한가? WRAM이라면 초기화될 것 같고, mram의 데이터라면 해줘야하고
     active_buffer = 0;
     buffer_index = 0;
-    mram_read(&mram_n_points, &n_points, 8);
-    mram_read(&mram_eps_squared, &eps_squared, 8);
-    mram_read(&mram_query_point, &query_point, sizeof(Point));
+    // mram_read(&mram_n_points, &n_points, 8);
+    // mram_read(&mram_eps_squared, &eps_squared, 8);
+    // mram_read(&mram_query_point, &query_point, sizeof(Point));
 
     // uint32_t max_points_per_tasklet = (1 << 11) / sizeof(Point);
     points_per_tasklet = n_points / NR_TASKLETS;

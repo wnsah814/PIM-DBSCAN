@@ -109,7 +109,7 @@ void get_neighbors_from_dpus(struct dpu_set_t set, const Point *query_point, int
   struct dpu_set_t dpu;
   uint32_t each_dpu;
   // printf("sending point (%d, %d)\n", (*query_point).x[0], (*query_point).x[1]);
-  DPU_ASSERT(dpu_broadcast_to(set, "mram_query_point", 0, query_point, sizeof(Point), DPU_XFER_DEFAULT));
+  DPU_ASSERT(dpu_broadcast_to(set, "query_point", 0, query_point, sizeof(Point), DPU_XFER_DEFAULT));
 
   DPU_ASSERT(dpu_launch(set, DPU_SYNCHRONOUS));
 
@@ -342,9 +342,9 @@ int main(int argc, char *argv[]) {
 
   DPU_ASSERT(dpu_load(set, DPU_BINARY, NULL));
 
-  DPU_ASSERT(dpu_broadcast_to(set, "mram_n_points", 0, &points_per_dpu, 8, DPU_XFER_DEFAULT));
+  DPU_ASSERT(dpu_broadcast_to(set, "n_points", 0, &points_per_dpu, 4, DPU_XFER_DEFAULT));
   eps = eps * eps;
-  DPU_ASSERT(dpu_broadcast_to(set, "mram_eps_squared", 0, &eps, 8, DPU_XFER_DEFAULT));
+  DPU_ASSERT(dpu_broadcast_to(set, "eps_squared", 0, &eps, 4, DPU_XFER_DEFAULT));
   uint32_t each_dpu;
   DPU_FOREACH(set, dpu, each_dpu) {
 
