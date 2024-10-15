@@ -14,15 +14,6 @@
 #define NOISE -2
 
 #define DPU_AMOUNT 1024
-// #define DPU_AMOUNT 64
-
-// typedef struct {
-//   double x[DIMENSIONS];
-//   union {
-//     uint64_t label;
-//     uint64_t index;
-//   };
-// } Point;
 
 typedef struct {
   int32_t x[DIMENSIONS];
@@ -106,7 +97,6 @@ int load_data(const char *filename) {
   return count;
 }
 
-// DPU에서 이웃 점들을 가져오는 함수
 uint32_t get_neighbors_from_dpus(struct dpu_set_t set, const Point *query_point, int n_points, IntVector *neighbors) {
   struct dpu_set_t dpu;
   uint32_t each_dpu;
@@ -133,18 +123,14 @@ uint32_t get_neighbors_from_dpus(struct dpu_set_t set, const Point *query_point,
   }
   max_count = (max_count + 1) & ~(uint32_t)1;
 
-  // printf("total: %u, max: %u\n", total_count, max_count);
-
   uint32_t *result = (uint32_t *)malloc(max_count * nr_dpus * sizeof(uint32_t));
   DPU_FOREACH(set, dpu, each_dpu) { DPU_ASSERT(dpu_prepare_xfer(dpu, &result[each_dpu * max_count])); }
   DPU_ASSERT(
       dpu_push_xfer(set, DPU_XFER_FROM_DPU, "mram_neighbors", 0, sizeof(uint32_t) * max_count, DPU_XFER_DEFAULT));
 
   for (uint32_t i = 0; i < nr_dpus; ++i) {
-    // printf("Processing results from DPU %u\n", i);
     for (uint32_t j = 0; j < counts[i]; ++j) {
       uint32_t idx = result[max_count * i + j];
-      // printf("  Neighbor %u: index %u\n", j, idx);
       if (idx >= n_points)
         continue;
       if (!visited[idx]) {
@@ -154,14 +140,7 @@ uint32_t get_neighbors_from_dpus(struct dpu_set_t set, const Point *query_point,
         }
         visited[idx] = 1;
       }
-      // if (points[idx].cluster == NOISE || points[idx].cluster == UNCLASSIFIED) {
-      //   push_back(neighbors, idx);
-      // }
     }
-    // for (uint32_t j = counts[i]; j < max_count; ++j) {
-    //   uint32_t idx = result[max_count * i + j];
-    //   printf("  (Neighbor %u: index %u)\n", j, idx);
-    // }
   }
   free(result);
   free(counts);
@@ -183,10 +162,7 @@ void expand_cluster(struct dpu_set_t set, int n_points, int point_id, int cluste
       if (neighbor_count < min_pts)
         continue;
       for (uint32_t j = 0; j < tmp_neighbors->size; ++j) {
-        // int sub_point = tmp_neighbors->data[j];
-        // if (points[sub_point].cluster == UNCLASSIFIED || points[sub_point].cluster == NOISE) {
         push_back(neighbors, tmp_neighbors->data[j]);
-        // }
       }
     }
   }
@@ -204,14 +180,11 @@ void dbscan(struct dpu_set_t set, int n_points) {
   }
 
   for (int i = 0; i < n_points; i++) {
-    // for (int i = 0; i < 1; i++) {
     if (points[i].cluster != UNCLASSIFIED)
       continue;
     neighbors->size = 0;
     uint32_t neighbor_count = get_neighbors_from_dpus(set, &points[i], n_points, neighbors);
 
-    // printf("number of neighbors at point %d: %d\n", i, neighbor_count);
-    // continue;
     if (neighbor_count < min_pts) {
       points[i].cluster = NOISE;
     } else {
@@ -222,101 +195,6 @@ void dbscan(struct dpu_set_t set, int n_points) {
   }
   free(neighbors);
   free(tmp_neighbors);
-}
-
-// void dump_mram(struct dpu_set_t dpu, const char *symbol_name, size_t offset, size_t size) {
-//   uint8_t *buffer = (uint8_t *)malloc(size);
-//   if (!buffer) {
-//     fprintf(stderr, "Memory allocation failed\n");
-//     return;
-//   }
-
-//   DPU_ASSERT(dpu_copy_from(dpu, symbol_name, offset, buffer, size));
-
-//   printf("MRAM Dump of %s (offset: %zu, size: %zu bytes):\n", symbol_name, offset, size);
-//   for (size_t i = 0; i < size; i++) {
-//     if (i % 16 == 0) {
-//       printf("\n%04zx: ", i);
-//     }
-//     printf("%02x ", buffer[i]);
-//   }
-//   printf("\n");
-
-//   free(buffer);
-// }
-
-// void test_first_point(struct dpu_set_t set, uint32_t nr_dpus) {
-//   struct dpu_set_t dpu;
-//   uint32_t each_dpu;
-//   uint32_t nums[nr_dpus];
-
-//   printf("sending point (%d, %d)\n", points[0].x[0], points[0].x[1]);
-//   DPU_ASSERT(dpu_broadcast_to(set, "mram_query_point", 0, &points[0], sizeof(Point), DPU_XFER_DEFAULT));
-
-//   printf("starting the program...\n");
-//   DPU_ASSERT(dpu_launch(set, DPU_SYNCHRONOUS));
-
-//   printf("gathering the number of neighbors...\n");
-//   uint32_t total_nums = 0;
-//   DPU_FOREACH(set, dpu, each_dpu) { DPU_ASSERT(dpu_prepare_xfer(dpu, &nums[each_dpu])); }
-//   DPU_ASSERT(dpu_push_xfer(set, DPU_XFER_FROM_DPU, "neighbor_count", 0, 4, DPU_XFER_DEFAULT));
-
-//   // DPU_FOREACH(set, dpu, each_dpu) { total_nums += nums[each_dpu]; }
-//   for (uint32_t i = 0; i < nr_dpus; ++i) {
-//     total_nums += nums[i];
-//   }
-//   printf("total sum = %u\n", total_nums);
-
-//   Point *neighbors = malloc(sizeof(Point) * 4);
-//   DPU_FOREACH(set, dpu) {
-//     DPU_ASSERT(dpu_copy_from(dpu, "mram_neighbors", 0, neighbors, sizeof(Point) * 4));
-//     break;
-//   }
-
-//   for (int i = 0; i < 4; ++i) {
-//     printf("[%2d] %d, %d\n", i, neighbors[i].x[0], neighbors[i].x[1]);
-//   }
-//   printf("\nDONE\n");
-// }
-
-// void test_dump(struct dpu_set_t set, uint32_t nr_dpus, uint32_t points_per_dpu) {
-//   struct dpu_set_t dpu;
-//   uint32_t each_dpu;
-//   uint32_t nums[nr_dpus];
-
-//   printf("sending point (%d, %d)\n", points[0].x[0], points[0].x[1]);
-//   DPU_ASSERT(dpu_broadcast_to(set, "mram_query_point", 0, &points[0], sizeof(Point), DPU_XFER_DEFAULT));
-
-//   printf("starting the program...\n");
-//   DPU_ASSERT(dpu_launch(set, DPU_SYNCHRONOUS));
-
-//   // MRAM 덤프 수행
-//   DPU_FOREACH(set, dpu) {
-//     dump_mram(dpu, "mram_neighbors", 0, 3 * sizeof(Point));
-//     // dump_mram(dpu, "mram_points", 0, points_per_dpu * sizeof(Point));
-//     break; // 첫 번째 DPU만 덤프
-//   }
-// }
-
-void print_test(struct dpu_set_t set, uint32_t nr_dpus) {
-  struct dpu_set_t dpu;
-  uint32_t each_dpu;
-  uint32_t ids[nr_dpus];
-  printf("\n##LOG##\n");
-
-  printf("sending point (%d, %d)\n", points[0].x[0], points[0].x[1]);
-  DPU_ASSERT(dpu_broadcast_to(set, "query_point", 0, &points[0], sizeof(Point), DPU_XFER_DEFAULT));
-
-  printf("starting the program...\n");
-  DPU_ASSERT(dpu_launch(set, DPU_SYNCHRONOUS));
-
-  printf("gathering the output...\n");
-  DPU_FOREACH(set, dpu, each_dpu) {
-    if (each_dpu == 5)
-      DPU_ASSERT(dpu_log_read(dpu, stdout));
-  }
-
-  printf("##done##\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -335,18 +213,12 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  // for (int i = 0; i < 10; ++i) {
-  //   printf("%d, %d\n", points[i].x[0], points[i].x[1]);
-  // }
-
   struct dpu_set_t set, dpu;
 
   DPU_ASSERT(dpu_alloc(DPU_AMOUNT, NULL, &set));
   DPU_ASSERT(dpu_get_nr_dpus(set, &nr_dpus));
   printf("Allocated %d DPU(s)\n", nr_dpus);
 
-  // 각 DPU에 할당할 포인트 수 계산
-  // uint64_t points_per_dpu = (n_points + nr_dpus - 1) / nr_dpus;
   uint32_t points_per_dpu = n_points / nr_dpus; // 나누어 떨어진다는 가정
 
   printf("points_per_dpu %u\n", points_per_dpu);
@@ -367,9 +239,6 @@ int main(int argc, char *argv[]) {
   struct timeval start_time, end_time;
   gettimeofday(&start_time, NULL);
 
-  // print_test(set, nr_dpus);
-  // test_first_point(set, nr_dpus);
-  // test_dump(set, nr_dpus, points_per_dpu);
   dbscan(set, n_points);
 
   gettimeofday(&end_time, NULL);
@@ -402,7 +271,6 @@ int main(int argc, char *argv[]) {
   printf("Results saved to %s\n", result_file);
   printf("Predicted labels saved to %s\n", labels_output_file);
 
-  // 메모리 해제
   free(points);
   DPU_ASSERT(dpu_free(set));
 
