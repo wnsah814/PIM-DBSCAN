@@ -30,7 +30,7 @@ __mram_noinit Point mram_points[MAX_NEIGHBORS];
 // __mram_noinit Point mram_query_point;
 
 // host에게 전달할 값들
-__mram_noinit Point mram_neighbors[MAX_NEIGHBORS];
+__mram_noinit uint32_t mram_neighbors[MAX_NEIGHBORS];
 __host uint32_t neighbor_count; // host는 WRAM에 접근해 이 값을 가져온다?
 
 // tasklet_0 에 의해 변경될 값들
@@ -40,7 +40,7 @@ __host Point query_point;
 
 __dma_aligned uint32_t points_per_tasklet;
 
-__dma_aligned Point output_buffer[2][CACHE_SIZE];
+__dma_aligned uint32_t output_buffer[2][CACHE_SIZE];
 __dma_aligned uint8_t active_buffer; // 0 or 1
 __dma_aligned uint32_t buffer_index;
 
@@ -88,8 +88,7 @@ int main() {
     for (int j = 0; j < cache_size; ++j) {
       if (squared_distance(point_cache[j].x, query_point.x) <= eps_squared) {
         mutex_lock(neighbor_mutex);
-
-        output_buffer[active_buffer][buffer_index] = point_cache[j];
+        output_buffer[active_buffer][buffer_index] = (uint32_t)point_cache[j].index;
         buffer_index++;
         neighbor_count++;
 
@@ -106,7 +105,7 @@ int main() {
 
           // Write current buffer to MRAM
           mram_write(output_buffer[1 - active_buffer], &mram_neighbors[current_neighbor_count],
-                     sizeof(Point) * current_buffer_size);
+                     sizeof(uint32_t) * current_buffer_size);
 
           mutex_unlock(buffer_mutex);
         } else {
@@ -118,10 +117,20 @@ int main() {
   barrier_wait(&final_sync_barrier);
 
   // 버퍼에 남아있는 점들
+
   if (tasklet_id == 0 && buffer_index > 0) {
+    // for (uint32_t i = 0; i < buffer_index; ++i) {
+    //   printf("%u %u\n", output_buffer[active_buffer][i]);
+    //   mram_neighbors[i] = output_buffer[active_buffer][i];
+    // }
     mram_write(output_buffer[active_buffer], &mram_neighbors[neighbor_count - buffer_index],
-               sizeof(Point) * buffer_index);
+               sizeof(uint32_t) * buffer_index);
+
+    mram_write(output_buffer[active_buffer], &mram_neighbors[neighbor_count - buffer_index],
+               sizeof(uint32_t) * (buffer_index + buffer_index % 2));
   }
+
+  barrier_wait(&final_sync_barrier);
 
   return 0;
 }
