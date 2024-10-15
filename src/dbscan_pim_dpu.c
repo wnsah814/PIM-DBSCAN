@@ -7,9 +7,10 @@
 #include <stdio.h>
 
 #define DIMENSIONS 2
-#define MAX_NEIGHBORS 1000000 // MRAM이 받올 수 있는 최대 점의 개수
-#define CACHE_SIZE 80         // WRAM이 가져올 수 있는 최대 점의 개수
-#ifndef NR_TASKLETS           // 오류 안뜨게 하는 용도
+#define MAX_NEIGHBORS 2048 // MRAM이 받올 수 있는 최대 점의 개수
+#define CACHE_SIZE 123     // WRAM이 가져올 수 있는 최대 점의 개수
+#define BUFFER_SIZE 512    // 결과 저장 버퍼
+#ifndef NR_TASKLETS        // 오류 안뜨게 하는 용도
 #define NR_TASKLETS 11
 #endif
 
@@ -35,7 +36,7 @@ __host int32_t eps_squared;
 __host Point query_point;
 
 __dma_aligned uint32_t points_per_tasklet;
-__dma_aligned uint32_t output_buffer[2][CACHE_SIZE];
+__dma_aligned uint32_t output_buffer[2][BUFFER_SIZE];
 __dma_aligned uint8_t active_buffer; // 0 or 1
 __dma_aligned uint32_t buffer_index;
 
@@ -77,7 +78,7 @@ int main() {
         buffer_index++;
         neighbor_count++;
 
-        if (buffer_index == CACHE_SIZE || neighbor_count == n_points) {
+        if (buffer_index == BUFFER_SIZE || neighbor_count == n_points) {
           uint32_t current_buffer_size = buffer_index;
           uint32_t current_neighbor_count = neighbor_count - current_buffer_size;
           mutex_lock(buffer_mutex);
