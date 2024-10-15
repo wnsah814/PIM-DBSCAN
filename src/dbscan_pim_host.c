@@ -22,14 +22,9 @@ typedef struct {
 } Point;
 
 typedef struct {
-  Point *neighbors;
-  int neighbor_count;
-} dpu_result_t;
-
-typedef struct {
   uint32_t *data;
-  int size;
-  int capacity;
+  uint32_t size;
+  uint32_t capacity;
 } IntVector;
 
 uint8_t *visited;
@@ -70,17 +65,17 @@ int push_back(IntVector *vec, uint32_t value) {
 
 Point *points;
 uint32_t nr_dpus;
-int min_pts;
+uint32_t min_pts;
 
-int load_data(const char *filename) {
+uint32_t load_data(const char *filename) {
   FILE *file = fopen(filename, "r");
   if (!file) {
     perror("Error opening file");
     return -1;
   }
 
-  int capacity = 65536;
-  int count = 0;
+  uint32_t capacity = 65536;
+  uint32_t count = 0;
   points = malloc(capacity * sizeof(Point));
 
   while (fscanf(file, "%d,%d", &points[count].x[0], &points[count].x[1]) == 2) {
@@ -97,10 +92,10 @@ int load_data(const char *filename) {
   return count;
 }
 
-uint32_t get_neighbors_from_dpus(struct dpu_set_t set, const Point *query_point, int n_points, IntVector *neighbors) {
+uint32_t get_neighbors_from_dpus(struct dpu_set_t set, const Point *query_point, uint32_t n_points,
+                                 IntVector *neighbors) {
   struct dpu_set_t dpu;
   uint32_t each_dpu;
-  // printf("sending point (%d, %d)\n", (*query_point).x[0], (*query_point).x[1]);
   DPU_ASSERT(dpu_broadcast_to(set, "query_point", 0, query_point, sizeof(Point), DPU_XFER_DEFAULT));
 
   DPU_ASSERT(dpu_launch(set, DPU_SYNCHRONOUS));
@@ -168,7 +163,7 @@ void expand_cluster(struct dpu_set_t set, int n_points, int point_id, int cluste
   }
 }
 
-void dbscan(struct dpu_set_t set, int n_points) {
+void dbscan(struct dpu_set_t set, uint32_t n_points) {
   int cluster_id = 0;
   IntVector *neighbors = create_int_vector(n_points);
   IntVector *tmp_neighbors = create_int_vector(n_points);
@@ -179,7 +174,7 @@ void dbscan(struct dpu_set_t set, int n_points) {
     exit(1);
   }
 
-  for (int i = 0; i < n_points; i++) {
+  for (uint32_t i = 0; i < n_points; i++) {
     if (points[i].cluster != UNCLASSIFIED)
       continue;
     neighbors->size = 0;
@@ -208,8 +203,8 @@ int main(int argc, char *argv[]) {
   min_pts = atoi(argv[3]);
   char *output_prefix = argv[4];
 
-  int n_points = load_data(data_file);
-  if (n_points < 0) {
+  uint32_t n_points = load_data(data_file);
+  if (n_points == 0) {
     return 1;
   }
 
@@ -263,7 +258,7 @@ int main(int argc, char *argv[]) {
     printf("Error opening labels output file\n");
     return 1;
   }
-  for (int i = 0; i < n_points; i++) {
+  for (uint32_t i = 0; i < n_points; i++) {
     fprintf(labels_output, "%d\n", points[i].cluster);
   }
   fclose(labels_output);
