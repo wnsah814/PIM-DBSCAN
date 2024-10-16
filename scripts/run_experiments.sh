@@ -70,15 +70,15 @@ for data_file in $DATA_DIR/*.csv; do
         if [[ $RUN_PIM -eq 1 ]]; then
             # PIM version
             echo "Running PIM version..."
-            sudo LD_LIBRARY_PATH=$LD_LIBRARY_PATH $BIN_DIR/dbscan_pim_host "$data_file" $EPS $MIN_PTS "$RESULTS_DIR/pim_${dataset}"
+            sudo LD_LIBRARY_PATH=$LD_LIBRARY_PATH $BIN_DIR/dbscan_pim_host "$data_file" $EPS $MIN_PTS "$RESULTS_DIR/pim_${dataset}" 1024
             
             # Change permissions of the output files
-            sudo chown $USER:$USER "${RESULTS_DIR}/pim_${dataset}_labels.txt"
-            sudo chown $USER:$USER "${RESULTS_DIR}/pim_${dataset}_result.txt"
+            sudo chown $USER:$USER "${RESULTS_DIR}/pim_${dataset}_1024_labels.txt"
+            sudo chown $USER:$USER "${RESULTS_DIR}/pim_${dataset}_1024_result.txt"
             
             # Calculate ARI
-            ari=$(python3 scripts/calculate_ari.py "$labels_file" "${RESULTS_DIR}/pim_${dataset}_labels.txt")
-            echo "PIM ARI: $ari" >> "${RESULTS_DIR}/pim_${dataset}_result.txt"
+            ari=$(python3 scripts/calculate_ari.py "$labels_file" "${RESULTS_DIR}/pim_${dataset}_1024_labels.txt")
+            echo "PIM ARI: $ari" >> "${RESULTS_DIR}/pim_${dataset}_1024_result.txt"
         fi
         
         echo "Finished experiments for $dataset dataset"
@@ -89,7 +89,7 @@ done
 echo "All experiments completed. Results are saved in $RESULTS_DIR"
 
 # Plot results
-echo "Plotting results..."
-python3 scripts/plot_results.py
+# echo "Plotting results..."
+# python3 scripts/plot_results.py
 
-echo "Experiment and plotting completed."
+# echo "Experiment and plotting completed."

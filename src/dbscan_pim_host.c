@@ -13,7 +13,7 @@
 #define UNCLASSIFIED -1
 #define NOISE -2
 
-#define DPU_AMOUNT 1024
+// #define DPU_AMOUNT 64
 
 typedef struct {
   int32_t x[DIMENSIONS];
@@ -193,8 +193,8 @@ void dbscan(struct dpu_set_t set, uint32_t n_points) {
 }
 
 int main(int argc, char *argv[]) {
-  if (argc != 5) {
-    printf("Usage: %s <data_file> <eps> <min_pts> <output_prefix>\n", argv[0]);
+  if (argc != 6) {
+    printf("Usage: %s <data_file> <eps> <min_pts> <output_prefix> <nr_dpus>\n", argv[0]);
     return 1;
   }
 
@@ -202,6 +202,7 @@ int main(int argc, char *argv[]) {
   int32_t eps = atoi(argv[2]);
   min_pts = atoi(argv[3]);
   char *output_prefix = argv[4];
+  nr_dpus = atoi(argv[5]);
 
   uint32_t n_points = load_data(data_file);
   if (n_points == 0) {
@@ -210,13 +211,13 @@ int main(int argc, char *argv[]) {
 
   struct dpu_set_t set, dpu;
 
-  DPU_ASSERT(dpu_alloc(DPU_AMOUNT, NULL, &set));
-  DPU_ASSERT(dpu_get_nr_dpus(set, &nr_dpus));
-  printf("Allocated %d DPU(s)\n", nr_dpus);
+  DPU_ASSERT(dpu_alloc(nr_dpus, NULL, &set));
+  // DPU_ASSERT(dpu_get_nr_dpus(set, &nr_dpus));
+  // printf("Allocated %d DPU(s)\n", nr_dpus);
 
   uint32_t points_per_dpu = n_points / nr_dpus; // 나누어 떨어진다는 가정
 
-  printf("points_per_dpu %u\n", points_per_dpu);
+  // printf("points_per_dpu %u\n", points_per_dpu);
 
   DPU_ASSERT(dpu_load(set, DPU_BINARY, NULL));
 
@@ -230,10 +231,8 @@ int main(int argc, char *argv[]) {
     DPU_ASSERT(dpu_prepare_xfer(dpu, &points[start_idx]));
   }
   DPU_ASSERT(dpu_push_xfer(set, DPU_XFER_TO_DPU, "mram_points", 0, points_per_dpu * sizeof(Point), DPU_XFER_DEFAULT));
-
   struct timeval start_time, end_time;
   gettimeofday(&start_time, NULL);
-
   dbscan(set, n_points);
 
   gettimeofday(&end_time, NULL);
@@ -242,7 +241,7 @@ int main(int argc, char *argv[]) {
   printf("total time = %lf\n", time_taken);
 
   char result_file[256];
-  snprintf(result_file, sizeof(result_file), "%s_result.txt", output_prefix);
+  snprintf(result_file, sizeof(result_file), "%s_%u_result.txt", output_prefix, nr_dpus);
   FILE *result = fopen(result_file, "w");
   if (result == NULL) {
     printf("Error opening result file\n");
@@ -252,7 +251,7 @@ int main(int argc, char *argv[]) {
   fclose(result);
 
   char labels_output_file[256];
-  snprintf(labels_output_file, sizeof(labels_output_file), "%s_labels.txt", output_prefix);
+  snprintf(labels_output_file, sizeof(labels_output_file), "%s_%u_labels.txt", output_prefix, nr_dpus);
   FILE *labels_output = fopen(labels_output_file, "w");
   if (labels_output == NULL) {
     printf("Error opening labels output file\n");

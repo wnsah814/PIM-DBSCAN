@@ -7,7 +7,7 @@
 #include <stdio.h>
 
 #define DIMENSIONS 2
-#define MAX_NEIGHBORS 2048 // MRAM이 받올 수 있는 최대 점의 개수
+#define MAX_NEIGHBORS 4096 // MRAM이 받올 수 있는 최대 점의 개수
 #define CACHE_SIZE 123     // WRAM이 가져올 수 있는 최대 점의 개수
 #define BUFFER_SIZE 512    // 결과 저장 버퍼
 #ifndef NR_TASKLETS        // 오류 안뜨게 하는 용도

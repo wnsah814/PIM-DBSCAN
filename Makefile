@@ -18,7 +18,7 @@ PIM_DPU_TARGET = $(BIN_DIR)/dbscan_pim_dpu
 
 # DPU 컴파일러 및 플래그
 DPU_CC = dpu-upmem-dpurte-clang
-DPU_CFLAGS = -DNR_TASKLETS=11 -I/home/wnsah814/upmem-sdk/include/dpu
+DPU_CFLAGS = -DNR_TASKLETS=11 -DSTACK_SIZE_DEFAULT=4096 -I/home/wnsah814/upmem-sdk/include/dpu
 
 # 호스트 PIM 컴파일 플래그
 # PIM_HOST_CFLAGS = $(shell dpu-pkg-config --cflags)
