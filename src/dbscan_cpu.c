@@ -86,30 +86,25 @@ int region_query(const Point *points, int n_points, int point_id, uint32_t eps_s
 }
 
 void expand_cluster(Point *points, int n_points, int point_id, int cluster_id, uint32_t eps_squared, int min_pts,
-                    IntVector *neighbors) {
+                    IntVector *neighbors, IntVector *tmp_neighbors) {
   points[point_id].cluster = cluster_id;
 
   for (int i = 0; i < neighbors->size; i++) {
     int current_point = neighbors->data[i];
-    if (points[current_point].cluster == UNCLASSIFIED || points[current_point].cluster == NOISE) {
-      if (points[current_point].cluster == UNCLASSIFIED) {
-        IntVector *new_neighbors = create_int_vector(n_points);
-        int neighbor_count = region_query(points, n_points, current_point, eps_squared, new_neighbors);
-
-        if (neighbor_count >= min_pts) {
-          for (int j = 0; j < new_neighbors->size; j++) {
-            // if (!visited[new_neighbors->data[j]]) {
-            if (!push_back(neighbors, new_neighbors->data[j])) {
-              fprintf(stderr, "Failed to add neighbor in expand_cluster\n");
-              exit(1);
-            }
-            // visited[new_neighbors->data[j]] = 1;
-            // }
+    if (points[current_point].cluster == NOISE) {
+      points[current_point].cluster = cluster_id;
+    } else if (points[current_point].cluster == UNCLASSIFIED) {
+      points[current_point].cluster = cluster_id;
+      tmp_neighbors->size = 0;
+      int neighbor_count = region_query(points, n_points, current_point, eps_squared, tmp_neighbors);
+      if (neighbor_count >= min_pts) {
+        for (int j = 0; j < tmp_neighbors->size; j++) {
+          if (!push_back(neighbors, tmp_neighbors->data[j])) {
+            fprintf(stderr, "Failed to add neighbor in expand_cluster\n");
+            exit(1);
           }
         }
-        free_int_vector(new_neighbors);
       }
-      points[current_point].cluster = cluster_id;
     }
   }
 }
@@ -118,6 +113,7 @@ void dbscan(Point *points, int n_points, uint32_t eps, int min_pts) {
   int cluster_id = 0;
   uint32_t eps_squared = eps * eps;
   IntVector *neighbors = create_int_vector(n_points);
+  IntVector *tmp_neighbors = create_int_vector(n_points);
   visited = (uint8_t *)calloc(n_points, sizeof(uint8_t));
 
   if (!neighbors || !visited) {
@@ -138,11 +134,12 @@ void dbscan(Point *points, int n_points, uint32_t eps, int min_pts) {
     } else {
       visited[i] = 1;
       cluster_id++;
-      expand_cluster(points, n_points, i, cluster_id, eps_squared, min_pts, neighbors);
+      expand_cluster(points, n_points, i, cluster_id, eps_squared, min_pts, neighbors, tmp_neighbors);
     }
   }
 
   free_int_vector(neighbors);
+  free_int_vector(tmp_neighbors);
   free(visited);
 }
 

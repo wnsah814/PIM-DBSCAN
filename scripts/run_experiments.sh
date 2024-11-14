@@ -9,7 +9,7 @@ RESULTS_DIR="./results"
 mkdir -p $RESULTS_DIR
 
 # DBSCAN parameters
-EPS=50
+EPS=9
 MIN_PTS=20
 
 # Set versions to run
@@ -49,14 +49,7 @@ for data_file in $DATA_DIR/*.csv; do
         dataset=$(basename "$data_file" .csv)
         echo "Running experiments for $dataset dataset"
         
-        if [[ $RUN_CPU -eq 1 ]]; then
-            # CPU version
-            echo "Running CPU version..."
-            $BIN_DIR/dbscan_cpu "$data_file" $EPS $MIN_PTS "$RESULTS_DIR/cpu_${dataset}"
-            # Calculate ARI
-            ari=$(python3 scripts/calculate_ari.py "$labels_file" "${RESULTS_DIR}/cpu_${dataset}_labels.txt")
-            echo "CPU ARI: $ari" >> "${RESULTS_DIR}/cpu_${dataset}_result.txt"
-        fi
+        
         
         if [[ $RUN_OPENMP -eq 1 ]]; then
             # OpenMP version
@@ -81,6 +74,14 @@ for data_file in $DATA_DIR/*.csv; do
             echo "PIM ARI: $ari" >> "${RESULTS_DIR}/pim_${dataset}_1024_result.txt"
         fi
         
+        if [[ $RUN_CPU -eq 1 ]]; then
+            # CPU version
+            echo "Running CPU version..."
+            $BIN_DIR/dbscan_cpu "$data_file" $EPS $MIN_PTS "$RESULTS_DIR/cpu_${dataset}"
+            # Calculate ARI
+            ari=$(python3 scripts/calculate_ari.py "$labels_file" "${RESULTS_DIR}/cpu_${dataset}_labels.txt")
+            echo "CPU ARI: $ari" >> "${RESULTS_DIR}/cpu_${dataset}_result.txt"
+        fi
         echo "Finished experiments for $dataset dataset"
         echo "----------------------------------------"
     fi
